@@ -8,7 +8,7 @@ sudo echo "spring.profiles.active=${SPRING_ACTIVE_PROFILES}" >> /home/csye6225/w
 sudo echo "spring.mvc.converters.preferred-json-mapper=gson" >> /home/csye6225/webapp/userdata.properties
 sudo echo "spring.cloud.gcp.pubsub.enabled=false" >> /home/csye6225/webapp/userdata.properties
 sudo echo "spring.cloud.gcp.core.enabled=false" >> /home/csye6225/webapp/userdata.properties
-sudo export "TOPIC=${TOPIC_ARN}"
+sudo export TOPIC="${TOPIC_ARN}"
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -a fetch-config -m ec2 \
   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
