@@ -19,7 +19,6 @@ jobs:
 
       - name: Initialize terraform
         run: |
-          cd terraform
           terraform init
 
       - name: Validate terraform
