@@ -1,0 +1,142 @@
+# IAM Role and Policy for ec2 instance
+resource "aws_iam_role" "ec2_role" {
+  name = "IAMRoleForEc2"
+  assume_role_policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "ec2.amazonaws.com"
+        },
+        "Action" : "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# Attach CloudWatch policies to the IAM role
+data "aws_iam_policy" "cloudwatch_agent_policy" {
+  arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# Attach the IAM policy to the IAM role
+resource "aws_iam_role_policy_attachment" "attach_cloudwatch_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = data.aws_iam_policy.cloudwatch_agent_policy.arn
+}
+
+resource "aws_iam_policy" "statsd_cloudwatch_policy" {
+  name        = "StatsDCloudWatchPolicy"
+  description = "Policy for publishing custom StatsD metrics to CloudWatch"
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "cloudwatch:PutMetricData"
+        ],
+        "Resource" : "*",
+        "Condition" : {
+          "StringEquals" : {
+            "cloudwatch:namespace" : "StatsD"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_statsd_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.statsd_cloudwatch_policy.arn
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2_profile"
+  role = aws_iam_role.ec2_role.name
+}
+
+
+# Policy for Load Balancer access
+# resource "aws_iam_policy" "load_balancer_policy" {
+#   name        = "LoadBalancerPolicy"
+#   description = "Policy to allow Load Balancer access"
+#   policy = jsonencode({
+#     "Version" : "2012-10-17",
+#     "Statement" : [
+#       {
+#         "Effect" : "Allow",
+#         "Action" : [
+#           "elasticloadbalancing:Describe*",
+#           "elasticloadbalancing:RegisterTargets",
+#           "elasticloadbalancing:DeregisterTargets",
+#           "elasticloadbalancing:ModifyTargetGroup"
+#         ],
+#         "Resource" : "*"
+#       }
+#     ]
+#   })
+# }
+
+# # Attach Load Balancer Policy to EC2 Role
+# resource "aws_iam_role_policy_attachment" "attach_load_balancer_policy" {
+#   role       = aws_iam_role.ec2_role.name
+#   policy_arn = aws_iam_policy.load_balancer_policy.arn
+# }
+
+
+resource "aws_iam_role_policy" "secrets_manager_access" {
+  name = "SecretsManagerAccessPolicy"
+  role = aws_iam_role.ec2_role.name
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "secretsmanager:GetSecretValue"
+        # Resource = "*"
+        Resource = [
+          aws_secretsmanager_secret.db_secret.arn, # Database Password
+          # aws_secretsmanager_secret.email_service_credentials.arn  # SendGrid API Key
+        ]
+      },
+      {
+        Effect : "Allow",
+        Action : [
+          "kms:Decrypt"
+        ],
+        Resource : [
+          "arn:aws:kms:${var.REGION}:${var.USER_ACCOUNT_ID}:key/${aws_kms_key.secrets_kms_key.id}"
+        ]
+      }
+    ]
+  })
+}
+
+
+resource "aws_iam_role_policy" "lambda_secrets_manager_access" {
+  name = "lambda-secrets-manager-access"
+  role = aws_iam_role.lambda_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = aws_secretsmanager_secret.email_service_credentials.arn # Only the SendGrid API Key
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt"
+        ]
+        Resource = aws_kms_key.secrets_kms_key.arn
+      }
+    ]
+  })
+}
