@@ -43,8 +43,8 @@ This project involved the creation of a comprehensive CI/CD pipeline for cloud i
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/GokulaKrishnanRGK/tf-gcp-infra.git
-   cd tf-gcp-infra
+   git clone https://github.com/GokulaKrishnanRGK/tf-aws-infra.git
+   cd tf-aws-infra
 
 2. **Configure AWS Authentication**
    ```bash
