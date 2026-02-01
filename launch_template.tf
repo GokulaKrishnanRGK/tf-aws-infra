@@ -30,6 +30,7 @@ resource "aws_launch_template" "csye6225_launch_template" {
     PASSWORD               = aws_db_instance.csye6225_mysql_instance.password
     DB_NAME                = aws_db_instance.csye6225_mysql_instance.db_name
     SPRING_ACTIVE_PROFILES = var.SPRING_ACTIVE_PROFILES
+    TOPIC_ARN              = aws_sns_topic.user_signup_notification.arn
   }))
   tag_specifications {
     resource_type = "instance"
